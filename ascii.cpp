@@ -187,10 +187,9 @@ Node * make_Tree(Node * root, uint64_t * table)
     while (M->second != nullptr)
     {
         table[extra] = table[M->first->index] + table[M->second->index];
-        extra++;
         if(!go_out_List(root, M->first) || !go_out_List(root, M->second)) return nullptr;
-
-        Node * parent = new_Node(extra - 1, root->next, M->first, M->second);
+        Node * parent = new_Node(extra, root->next, M->first, M->second);
+        extra++;
         root->next = parent;
         delete M;
         M = find_mins(root, table);
@@ -204,12 +203,14 @@ void print_code(uint8_t * code)
 {
     if (code!=nullptr)
     {
-        std::cout << (int)code[0];
+        std::cout << (int)code[0] << " : ";
         for (int i = 1; i <=(code[0] - 1) / 8 + 1; i++) 
         {
-            std::cout  <<'.';
             for (int j = 0; j < 8; j++)
+            {
+                if ((i-1)*8 + j >= code[0]) break;
                 std::cout << (bool)(code[i]&(0b10000000 >> j));
+            }
         }
     }
 }
@@ -267,13 +268,71 @@ void code_Tree(Node * root, uint8_t * code = nullptr)
     code_Tree(root->R, right);
 }
 
+uint8_t ** code_Table(Node * root, uint8_t ** code_table = nullptr)
+{
+    if (root == nullptr) return nullptr;
+    if (code_table == nullptr)
+    {
+        code_table = new uint8_t * [SIZE/2] ();
+    }
+    if (root->index < 128)
+    {
+        code_table[root->index] = root->code; return code_table;
+    }
+    code_Table(root->L, code_table); code_Table(root->R, code_table);
+    return code_table;
+}
+
+void print_code_table( uint8_t ** code_table)
+{
+    for (int i = 0; i < SIZE/2; i++){
+        std::cout << i << " : ";
+        print_code(code_table[i]);
+        std::cout << '\n';
+    }
+}
+
+bool code_file(uint8_t ** code_table, const char * input_name, const char * output_name = "compressed.txt")
+{
+    std::ifstream input(input_name);
+    std::ofstream output(output_name);
+    if (!input.is_open() || !output.is_open()) return false;
+    char in;
+    char out;
+    uint8_t buffer = 0;
+    uint8_t pos = 0;
+    while (input.get(in)) {
+        if (I(in) < SIZE/2) 
+        {
+            uint8_t * code = code_table[I(in)];
+            uint8_t len = code[0];
+            for (int i = 0; i < len; i++)
+            {
+                buffer = buffer | ((0b10000000 >> pos) & (code[i / 8 + 1] & (0b10000000 >> i%8)));
+                pos++;
+                if (pos > 7)
+                {
+                    output << (char)buffer;
+                    buffer = 0;
+                    pos = 0;
+                }
+            }
+        }
+    }
+    if (pos != 0) output << (char) buffer;
+    input.close(); output.close();
+    return true;
+}
+
 int main()
 {
-    uint64_t * Table = file2table("test2.txt");
+    uint64_t * Table = file2table("image.jpeg");
     Node * Head = table2list(Table);
     print_list(Head, Table);
     Node * Root = make_Tree(Head, Table);
     code_Tree(Root);
     print_Tree(Root, true);
+    print_code_table(code_Table(Root));
+    code_file(code_Table(Root), "image.jpeg");
     return 0;
 }
