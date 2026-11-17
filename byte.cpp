@@ -2,7 +2,7 @@
 #include <fstream>
 #include <cstdint>
 
-#define SIZE 256
+constexpr int SIZE = 256;
 
 using byte = std::uint8_t;
 using index = std::uint16_t;
@@ -15,12 +15,19 @@ big * new_table()
 
 big * get_table(const char * file_name)
 {
-    std::ifstream file(file_name);
+    std::ifstream file(file_name, std::ios::binary);
     if (!file.is_open()) return nullptr;
     char current;
     big * res = new_table();
     while (file.get(current)) res[(index)(unsigned char)current]++;  
     file.close();
+    return res;
+}
+
+int count_table(big * table)
+{
+    int res = 0;
+    for (int i = 0; i < SIZE*2; i++) if (table[i] > 0) res++;
     return res;
 }
 
@@ -119,7 +126,10 @@ Node * get_tree(Node * root, big * table)
     while (M->second != nullptr)
     {
         table[extra] = table[M->first->pos] + table[M->second->pos];
-        if(!out(root, M->first) || !out(root, M->second)) return nullptr;
+        if(!out(root, M->first) || !out(root, M->second))
+        {
+            delete M;return nullptr;
+        } 
         Node * parent = new_Node(extra, root->next, M->first, M->second);
         extra++;
         root->next = parent;
@@ -129,7 +139,6 @@ Node * get_tree(Node * root, big * table)
     delete M;
     return root->next;
 }
-
 
 // кодируем массивом байтов, первый байт - длина кода в битах
 
@@ -210,9 +219,24 @@ bool write_code_table(Node * root, byte ** code_table)
 
 bool code_file(byte ** code_table, const char * input_name, const char * output_name)
 {
-    std::ifstream input(input_name);
-    std::ofstream output(output_name);
+    std::ifstream input(input_name, std::ios::binary);
+    std::ofstream output(output_name, std::ios::binary);
     if (!input.is_open() || !output.is_open()) return false;
+    
+    byte N = 255;
+    for (int i = 0; i < SIZE; i++) if (code_table[i] !=nullptr) N++;
+    output << (char)N;
+
+    for (int i = 0; i < SIZE; i++)
+    {
+        if (code_table[i] != nullptr)
+        {
+            output << (char)i;
+            for (int j = 0; j < byte_size(code_table[i][0]) + 1; j++) 
+                output << (char)code_table[i][j];
+        }
+    }
+
     char in;
     char out;
     byte buffer = 0;
@@ -239,7 +263,19 @@ bool code_file(byte ** code_table, const char * input_name, const char * output_
 
 // очистка дерева
 
-
+void erase(Node * root)
+{
+    if (root == nullptr) return;
+    if (root->left == nullptr && root->right == nullptr) 
+    {
+        delete[] root->code;
+        delete root;
+        return;
+    }
+    erase(root->left); erase(root->right);
+    delete[] root->code;
+    delete root;
+}
 
 // Вывод
 
@@ -305,7 +341,9 @@ void print(byte ** code_table)
 
 // всё вместе
 
-int coder (const char * input_name, const char * output_name = "compressed.hhh", bool verbose = true)
+int coder (const char * input_name, 
+    const char * output_name = "compressed.hhh", 
+    bool verbose = true)
 {
     big * frequencies = get_table(input_name);
     if (frequencies == nullptr)
@@ -347,11 +385,12 @@ int coder (const char * input_name, const char * output_name = "compressed.hhh",
         if (verbose) std::cout << "Error: input or output file is not opened or made\n";
         return 6;
     }
-
+    
+    delete[] code_table;
+    erase(tree);
     delete[] frequencies;
     return 0;
 }
-
 
 int main()
 {
