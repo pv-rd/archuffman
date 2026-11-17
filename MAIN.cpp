@@ -140,6 +140,7 @@ Node * get_tree(Node * root, big * table)
     return root->next;
 }
 
+
 // кодируем массивом байтов, первый байт - длина кода в битах
 
 bool get_bit(byte Byte, int pos = 0)
@@ -261,6 +262,25 @@ bool code_file(byte ** code_table, const char * input_name, const char * output_
     return true;
 }
 
+
+bool linearize(Node * root, byte ** array, index i, big * table)
+{
+    if (root == nullptr) return true;
+    if (array == nullptr) return false;
+    if (array[i] != nullptr) return false;
+
+    int length = byte_size(root->code[0]) + 2;
+    byte * code = new byte[length];
+    byte symbol = root->pos;
+    code[0] = symbol;
+    code[1] = root->code[0];
+    for (int i = 2; i < length; i++) code[i] = root->code[i-1];
+    array[i] = code;
+    bool res1 = linearize(root->left, array, 2*i+1, table);
+    bool res2 = linearize(root->right, array, 2*i+2, table);
+    return res1 && res2;
+}
+
 // очистка дерева
 
 void erase(Node * root)
@@ -339,6 +359,14 @@ void print(byte ** code_table)
     }
 }
 
+void printl(byte ** line)
+{
+    for (int i = 0; i < SIZE*2; i++){
+        if (line[i] != nullptr) print(line[i]);
+        std::cout << '\n';
+    }
+}
+
 // всё вместе
 
 int coder (const char * input_name, 
@@ -385,6 +413,10 @@ int coder (const char * input_name,
         if (verbose) std::cout << "Error: input or output file is not opened or made\n";
         return 6;
     }
+
+    byte ** Line = new byte*[SIZE*3]();
+    linearize(tree, Line, 0, frequencies);
+    printl(Line);
     
     delete[] code_table;
     erase(tree);
@@ -394,6 +426,6 @@ int coder (const char * input_name,
 
 int main()
 {
-    coder("test2.txt");
+    coder("test.txt");
     return 0;
 }
