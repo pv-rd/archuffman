@@ -2,6 +2,7 @@
 #include <fstream>
 #include <cstdint>
 #include "ByteTable.hpp"
+#include "Bits.hpp"
 
 constexpr int SIZE = 256;
 
@@ -122,26 +123,6 @@ Node * get_tree(Node * root, big * table)
 
 // кодируем массивом байтов, первый байт - длина кода в битах
 
-bool get_bit(byte Byte, int pos = 0)
-{
-    byte mask = 0b10000000 >> pos;
-    return Byte & mask;
-}
-
-byte set_bit(byte Byte, int pos, bool bit = true)
-{
-    byte mask = 0b10000000 >> pos;
-    if (bit)
-        return Byte | mask;
-    else
-        return Byte & (~mask);
-}
-
-int byte_size(int bit_size)
-{
-    if (bit_size == 0) return 0;
-    return (bit_size - 1) / 8 + 1;
-}
 
 bool set_code(Node * root, byte * code = nullptr)
 {
@@ -363,6 +344,6 @@ int coder (const char * input_name,
 
 int main()
 {
-    coder("test.txt");
+    coder("test2.txt");
     return 0;
 }

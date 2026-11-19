@@ -426,6 +426,6 @@ int coder (const char * input_name,
 
 int main()
 {
-    coder("test.txt");
+    coder("test3.txt");
     return 0;
 }

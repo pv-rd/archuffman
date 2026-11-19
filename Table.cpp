@@ -1,4 +1,4 @@
-#include "ByteTable.hpp"
+#include "Table.hpp"
 
 #include <iostream>
 #include <fstream>
@@ -14,13 +14,17 @@ big * new_table()
     return new big[SIZE]();
 }
 
-big * get_table(const char * file_name)
+big * get_table(const char * file_name, bool count_size)
 {
     std::ifstream file(file_name, std::ios::binary);
     if (!file.is_open()) return nullptr;
     char current;
     big * res = new_table();
-    while (file.get(current)) res[(index)(unsigned char)current]++;  
+    while (file.get(current)) 
+    {
+        res[(index)(unsigned char)current]++;
+        if (count_size) res[SIZE]++;
+    }
     file.close();
     return res;
 }
@@ -33,33 +37,33 @@ big get_size(const char * file_name)
     return res;
 }
 
-int count_table(big * table)
+int count_nonzero(big * table)
 {
     int res = 0;
     for (int i = 0; i < SIZE; i++) if (table[i] > 0) res++;
     return res;
 }
 
-void print_table(big * table, PrintMode pm)
+void print_table(big * table, PrintMode mode)
 {
     if (table == nullptr) std::cout << "No table\n";
     else
     {
-        if (pm == PrintMode::Full)
+        if (mode == PrintMode::Full)
         {
             for (int i = 0; i < SIZE; i++)
             {
                 std::cout <<  i << "\t" << table[i] << '\n';
             }
         }
-        else if (pm == PrintMode::Half)
+        else if (mode == PrintMode::Half)
         {
             for (int i = 0; i < SIZE/2; i++)
             {
                 std::cout <<  i << "\t" << table[i] << '\n';
             }
         }
-        else if (pm == PrintMode::Nonzero)
+        else if (mode == PrintMode::Nonzero)
         {
             for (int i = 0; i < SIZE; i++)
             {
@@ -70,7 +74,7 @@ void print_table(big * table, PrintMode pm)
     }
 }
 
-std::uint32_t * get_ptr(std::uint32_t * table, std::uint16_t index)
+void erase_table(big * table)
 {
-    return table + index;
+    delete[] table;
 }
